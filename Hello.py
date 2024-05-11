@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import re
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory  # Import Sastrawi StemmerFactory
 
 # Load data
 def load_data(file):
