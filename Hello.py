@@ -1,7 +1,20 @@
 import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
 import streamlit as st
+
+# Fungsi untuk mengunduh paket NLTK jika belum ada
+def download_nltk_packages():
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt')
+    try:
+        nltk.data.find('corpora/stopwords')
+    except LookupError:
+        nltk.download('stopwords')
+
+# Panggil fungsi untuk mengunduh paket NLTK
+download_nltk_packages()
+
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -12,11 +25,6 @@ import matplotlib.pyplot as plt
 import re
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-from scipy.spatial import distance
-import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-from sklearn.datasets import make_blobs
-from sklearn.preprocessing import StandardScaler
 from scipy.spatial import distance
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 
