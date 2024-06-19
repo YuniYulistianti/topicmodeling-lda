@@ -55,78 +55,61 @@ def load_data(file):
 
 # Preprocessing
 def preprocessing(df):
-    st.subheader("Preprocessing:")
-    st.text("Menghapus karakter spesial")
+    st.write("\nStep 1: Menghapus karakter spesial")
+    df['title'] = df['title'].astype(str).apply(lambda text: re.sub(r'[^a-zA-Z0-9\s]', '', text))
+    st.write(df['title'].head())
 
-    def removeSpecialText(text):
-        text = text.replace('\\t',"").replace('\\n',"").replace('\\u',"").replace('\\',"")
-        text = text.encode('ascii', 'replace').decode('ascii')
-        return text.replace("http://"," ").replace("https://", " ")
+    st.write("\nStep 2: Menghapus tanda baca")
+    df['title'] = df['title'].apply(lambda text: re.sub(r'[^\w\s]', '', text))
+    st.write(df['title'].head())
 
-    df['title'] = df['title'].astype(str).apply(removeSpecialText)
-    st.dataframe(df['title'])
+    st.write("\nStep 3: Menghapus angka pada teks")
+    df['title'] = df['title'].apply(lambda text: re.sub(r'\d+', '', text))
+    st.write(df['title'].head())
 
-    st.text("Menghapus tanda baca")
-    def removePunctuation(text):
-        text = re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)"," ",text)
-        return text
+    st.write("\nStep 4: Mengubah semua huruf pada teks menjadi huruf kecil")
+    df['title'] = df['title'].apply(lambda text: text.lower())
+    st.write(df['title'].head())
 
-    df['title'] = df['title'].apply(removePunctuation)
-    st.dataframe(df['title'])
+    st.write("\nStep 5: Tokenisasi")
+    df['title_tokens'] = df['title'].apply(word_tokenize)
+    st.write(df['title_tokens'].head())
 
-    st.text("Menghapus angka pada teks")
-    def removeNumbers(text):
-        return re.sub(r"\d+", "", text)
+    # Define additional stopwords
+    additional_stopwords = ["yg", "dg", "rt", "dgn", "ny", "d", 'klo', 'kalo', 'amp', 'biar', 'bikin', 'bilang', 'gak', 'ga', 'krn', 'nya', 'nih', 'sih', 'si', 'tau', 'tdk', 'tuh', 'utk', 'ya', 'jd', 'jgn', 'sdh', 'aja', 'n', 't', 'nyg', 'hehe', 'pen', 'u', 'nan', 'loh', 'rt', '&amp', 'yah', 'bisnis', 'pandemi', 'indonesia']
 
-    df['title'] = df['title'].apply(removeNumbers)
-    st.dataframe(df['title'])
-
-    st.text("Mengubah semua huruf pada teks menjadi huruf kecil")
-    def casefolding(comment):
-        return comment.lower()
-
-    df['title'] = df['title'].apply(casefolding)
-    st.dataframe(df['title'])
-
-    st.text("Tokenisasi")
-    def tokenize(text):
-        tokens = word_tokenize(text)
-        return tokens
-
-    df['title_tokens'] = df['title'].apply(tokenize)
-    st.dataframe(df[['title', 'title_tokens']])
-
-    st.text("Menghapus stopwords")
-    additional_stopwords = ["yg", "dg", "rt", "dgn", "ny", "d", 'klo',
-                           'kalo', 'amp', 'biar', 'bikin', 'bilang',
-                           'gak', 'ga', 'krn', 'nya', 'nih', 'sih',
-                           'si', 'tau', 'tdk', 'tuh', 'utk', 'ya',
-                           'jd', 'jgn', 'sdh', 'aja', 'n', 't',
-                           'nyg', 'hehe', 'pen', 'u', 'nan', 'loh', 'rt',
-                           '&amp', 'yah', 'bisnis', 'pandemi', 'indonesia']
-
+    # Get the default Indonesian stopwords and add the additional ones
     stopword = set(stopwords.words('indonesian'))
     stopword.update(additional_stopwords)
 
-    def removeStopwords(tokens):
-        return [word for word in tokens if word.lower() not in stopword]
+    def remove_stopwords(tokens):
+        result = [word for word in tokens if word.lower() not in stopword]
+        return result
 
-    df['title_stop'] = df['title_tokens'].apply(removeStopwords)
-    df['title_stop'] = df['title_stop'].apply(lambda tokens: '[' + ', '.join([f"'{token}'" for token in tokens]) + ']')
-    st.dataframe(df[['title_tokens', 'title_stop']])
+    # Apply the remove_stopwords function to the 'title_tokens' column
+    df['title_tokens'] = df['title_tokens'].apply(remove_stopwords)
 
-    st.text("Stemming")
+    # Print the first few rows of the 'title_tokens' column after stopword removal
+    st.write("\nStep 6: Penghapusan stopwords")
+    st.write(df['title_tokens'].head())
+
+    # Stemming
     factory = StemmerFactory()
     stemmer = factory.create_stemmer()
-    
-    def stemming(tokens):
-        return [stemmer.stem(token) for token in tokens]
 
-    df['title_stemmer'] = df['title_stop'].apply(lambda x: stemming(eval(x)))
-    df['title_stemmer'] = df['title_stemmer'].apply(lambda tokens: '[' + ', '.join([f"'{token}'" for token in tokens]) + ']')
-    st.dataframe(df[['title_stop', 'title_stemmer']])
+    def preprocess_text(text):
+        tokens = word_tokenize(text)
+        stemmed_tokens = [stemmer.stem(token) for token in tokens]
+        filtered_tokens = [token for token in stemmed_tokens if token.lower() not in stopword]
+        processed_text = ' '.join(filtered_tokens)
+        return processed_text
 
-    return df['title_stemmer']
+    df['title'] = df['title'].apply(preprocess_text)
+
+    st.write("\nStep 7: Stemming")
+    st.write(df['title'].head())
+
+    return df
 
 # Ekstraksi Fitur TF-IDF
 def feature_extraction(data):
@@ -260,9 +243,9 @@ def main():
         if 'processed_data' not in st.session_state or st.session_state.processed_data is None:
             st.warning("Harap lakukan preprocessing terlebih dahulu!")
         else:
-            data = st.session_state.processed_data.tolist()  # Assuming 'processed_data' is the column containing text data
-            n_topics = st.number_input("Jumlah topik", min_value=2, max_value=10, step=1, value=3)
-            n_words = st.number_input("Jumlah kata per topik", min_value=5, max_value=20, step=1, value=10)
+            data = st.session_state.processed_data['title'].tolist()  # Convert the 'title' column to a list
+            n_topics = st.number_input("Jumlah topik", min_value=2, max_value=10, step=1, value=5)
+            n_words = st.number_input("Jumlah kata per topik", min_value=5, max_value=20, step=1, value=20)
             result = lda(data, n_topics, n_words)
             for topic_string in result:
                 st.write(topic_string)
